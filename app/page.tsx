@@ -15,38 +15,41 @@ export default function Home() {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const analyzeCode = () => {
-    if (!code.trim()) {
-      return;
+const analyzeCode = async () => {
+  if (!code.trim()) {
+    return;
+  }
+
+  setLoading(true);
+  setAnalysis(null);
+
+  try {
+    const response = await fetch("/api/analyze", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        code,
+        language,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to analyze code");
     }
 
-    setLoading(true);
-    setAnalysis(null);
+    const result = await response.json();
 
-    setTimeout(() => {
-      const result: AnalysisResult = {
-        score: 82,
+    setAnalysis(result);
+  } catch (error) {
+    console.error(error);
 
-        explanation:
-          "This code defines a function and performs a basic operation. DevLens will later use AI to provide a more detailed explanation.",
-
-        issues: [
-          "No input validation detected.",
-          "Error handling could be improved.",
-          "Some variable names may be more descriptive.",
-        ],
-
-        suggestions: [
-          "Add input validation.",
-          "Use clear and descriptive variable names.",
-          "Handle possible runtime errors.",
-        ],
-      };
-
-      setAnalysis(result);
-      setLoading(false);
-    }, 1000);
-  };
+    alert("Something went wrong while analyzing the code.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-white">
