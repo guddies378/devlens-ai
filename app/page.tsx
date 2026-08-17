@@ -2,12 +2,56 @@
 
 import { useState } from "react";
 
+type AnalysisResult = {
+  score: number;
+  explanation: string;
+  issues: string[];
+  suggestions: string[];
+};
+
 export default function Home() {
   const [code, setCode] = useState("");
+  const [language, setLanguage] = useState("JavaScript");
+  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const analyzeCode = () => {
+    if (!code.trim()) {
+      return;
+    }
+
+    setLoading(true);
+    setAnalysis(null);
+
+    setTimeout(() => {
+      const result: AnalysisResult = {
+        score: 82,
+
+        explanation:
+          "This code defines a function and performs a basic operation. DevLens will later use AI to provide a more detailed explanation.",
+
+        issues: [
+          "No input validation detected.",
+          "Error handling could be improved.",
+          "Some variable names may be more descriptive.",
+        ],
+
+        suggestions: [
+          "Add input validation.",
+          "Use clear and descriptive variable names.",
+          "Handle possible runtime errors.",
+        ],
+      };
+
+      setAnalysis(result);
+      setLoading(false);
+    }, 1000);
+  };
 
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-white">
       <div className="mx-auto max-w-7xl px-6 py-10">
+        {/* Header */}
         <header className="mb-12 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">
@@ -25,12 +69,28 @@ export default function Home() {
           </span>
         </header>
 
+        {/* Main Content */}
         <section className="grid gap-8 lg:grid-cols-2">
+          {/* LEFT SIDE */}
           <div>
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-semibold">Your Code</h2>
 
-              <select className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 outline-none">
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="
+                  rounded-md
+                  border
+                  border-zinc-800
+                  bg-zinc-950
+                  px-3
+                  py-2
+                  text-sm
+                  text-zinc-300
+                  outline-none
+                "
+              >
                 <option>JavaScript</option>
                 <option>Python</option>
               </select>
@@ -39,7 +99,11 @@ export default function Home() {
             <textarea
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              placeholder={`function hello() {\n  console.log("Hello World");\n}`}
+              placeholder={
+                language === "JavaScript"
+                  ? `function hello() {\n  console.log("Hello World");\n}`
+                  : `def hello():\n    print("Hello World")`
+              }
               className="
                 min-h-125
                 w-full
@@ -59,6 +123,8 @@ export default function Home() {
             />
 
             <button
+              onClick={analyzeCode}
+              disabled={loading || !code.trim()}
               className="
                 mt-4
                 w-full
@@ -70,21 +136,22 @@ export default function Home() {
                 text-black
                 transition
                 hover:bg-zinc-200
+                disabled:cursor-not-allowed
+                disabled:bg-zinc-700
+                disabled:text-zinc-400
               "
             >
-              Analyze Code
+              {loading ? "Analyzing..." : "Analyze Code"}
             </button>
           </div>
 
+          {/* RIGHT SIDE */}
           <div>
             <h2 className="mb-3 font-semibold">Analysis</h2>
 
             <div
               className="
-                flex
                 min-h-125
-                items-center
-                justify-center
                 rounded-xl
                 border
                 border-zinc-800
@@ -92,17 +159,103 @@ export default function Home() {
                 p-6
               "
             >
-              <div className="text-center">
-                <div className="mb-4 text-4xl">⌘</div>
+              {!analysis && !loading && (
+                <div className="flex min-h-112.5 items-center justify-center">
+                  <div className="text-center">
+                    <div className="mb-4 text-4xl">⌘</div>
 
-                <h3 className="font-medium text-zinc-300">
-                  Ready to analyze
-                </h3>
+                    <h3 className="font-medium text-zinc-300">
+                      Ready to analyze
+                    </h3>
 
-                <p className="mt-2 max-w-xs text-sm text-zinc-600">
-                  Paste your JavaScript or Python code and click Analyze Code.
-                </p>
-              </div>
+                    <p className="mt-2 max-w-xs text-sm text-zinc-600">
+                      Paste your JavaScript or Python code and click Analyze
+                      Code.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {loading && (
+                <div className="flex min-h-112.5 items-center justify-center">
+                  <div className="text-center">
+                    <p className="animate-pulse text-zinc-400">
+                      Analyzing your code...
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {analysis && (
+                <div>
+                  {/* Score */}
+                  <div className="mb-8">
+                    <p className="text-sm text-zinc-500">CODE QUALITY</p>
+
+                    <div className="mt-2 flex items-end gap-2">
+                      <span className="text-5xl font-bold">
+                        {analysis.score}
+                      </span>
+
+                      <span className="mb-1 text-zinc-500">/100</span>
+                    </div>
+
+                    <div className="mt-4 h-2 overflow-hidden rounded-full bg-zinc-800">
+                      <div
+                        className="h-full bg-white transition-all"
+                        style={{
+                          width: `${analysis.score}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Explanation */}
+                  <div className="mb-8">
+                    <h3 className="mb-3 font-semibold">Explanation</h3>
+
+                    <p className="text-sm leading-7 text-zinc-400">
+                      {analysis.explanation}
+                    </p>
+                  </div>
+
+                  {/* Issues */}
+                  <div className="mb-8">
+                    <h3 className="mb-3 font-semibold">
+                      Potential Issues
+                    </h3>
+
+                    <div className="space-y-3">
+                      {analysis.issues.map((issue, index) => (
+                        <div
+                          key={index}
+                          className="rounded-lg border border-zinc-800 p-3 text-sm text-zinc-400"
+                        >
+                          {issue}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Suggestions */}
+                  <div>
+                    <h3 className="mb-3 font-semibold">
+                      Suggestions
+                    </h3>
+
+                    <div className="space-y-3">
+                      {analysis.suggestions.map((suggestion, index) => (
+                        <div
+                          key={index}
+                          className="rounded-lg bg-zinc-900 p-3 text-sm text-zinc-400"
+                        >
+                          ✓ {suggestion}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </section>
