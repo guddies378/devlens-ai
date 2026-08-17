@@ -7,6 +7,7 @@ type AnalysisResult = {
   explanation: string;
   issues: string[];
   suggestions: string[];
+  improvedCode: string;
 };
 
 export default function Home() {
@@ -15,41 +16,50 @@ export default function Home() {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
 
-const analyzeCode = async () => {
-  if (!code.trim()) {
-    return;
-  }
-
-  setLoading(true);
-  setAnalysis(null);
-
-  try {
-    const response = await fetch("/api/analyze", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        code,
-        language,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to analyze code");
+  const analyzeCode = async () => {
+    if (!code.trim()) {
+      return;
     }
 
-    const result = await response.json();
+    setLoading(true);
+    setAnalysis(null);
 
-    setAnalysis(result);
-  } catch (error) {
-    console.error(error);
+    try {
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          code,
+          language,
+        }),
+      });
 
-    alert("Something went wrong while analyzing the code.");
-  } finally {
-    setLoading(false);
-  }
-};
+      if (!response.ok) {
+        throw new Error("Failed to analyze code");
+      }
+
+      const result = await response.json();
+
+      setAnalysis(result);
+    } catch (error) {
+      console.error(error);
+      alert("Something went wrong while analyzing the code.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyImprovedCode = async () => {
+    if (!analysis?.improvedCode) return;
+
+    try {
+      await navigator.clipboard.writeText(analysis.improvedCode);
+    } catch (error) {
+      console.error("Failed to copy code:", error);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-white">
@@ -95,18 +105,28 @@ const analyzeCode = async () => {
                 "
               >
                 <option>JavaScript</option>
+                <option>TypeScript</option>
                 <option>Python</option>
+                <option>Java</option>
+                <option>C</option>
+                <option>C++</option>
+                <option>C#</option>
+                <option>PHP</option>
+                <option>Go</option>
+                <option>Rust</option>
+                <option>Swift</option>
+                <option>Kotlin</option>
+                <option>Ruby</option>
+                <option>HTML</option>
+                <option>CSS</option>
+                <option>SQL</option>
               </select>
             </div>
 
             <textarea
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              placeholder={
-                language === "JavaScript"
-                  ? `function hello() {\n  console.log("Hello World");\n}`
-                  : `def hello():\n    print("Hello World")`
-              }
+              placeholder="Paste your code here..."
               className="
                 min-h-125
                 w-full
@@ -162,6 +182,7 @@ const analyzeCode = async () => {
                 p-6
               "
             >
+              {/* Empty State */}
               {!analysis && !loading && (
                 <div className="flex min-h-112.5 items-center justify-center">
                   <div className="text-center">
@@ -172,13 +193,14 @@ const analyzeCode = async () => {
                     </h3>
 
                     <p className="mt-2 max-w-xs text-sm text-zinc-600">
-                      Paste your JavaScript or Python code and click Analyze
-                      Code.
+                      Paste your code, choose the programming language, and
+                      click Analyze Code.
                     </p>
                   </div>
                 </div>
               )}
 
+              {/* Loading State */}
               {loading && (
                 <div className="flex min-h-112.5 items-center justify-center">
                   <div className="text-center">
@@ -189,6 +211,7 @@ const analyzeCode = async () => {
                 </div>
               )}
 
+              {/* Analysis Results */}
               {analysis && (
                 <div>
                   {/* Score */}
@@ -205,9 +228,12 @@ const analyzeCode = async () => {
 
                     <div className="mt-4 h-2 overflow-hidden rounded-full bg-zinc-800">
                       <div
-                        className="h-full bg-white transition-all"
+                        className="h-full bg-white transition-all duration-500"
                         style={{
-                          width: `${analysis.score}%`,
+                          width: `${Math.min(
+                            Math.max(analysis.score, 0),
+                            100
+                          )}%`,
                         }}
                       />
                     </div>
@@ -222,46 +248,138 @@ const analyzeCode = async () => {
                     </p>
                   </div>
 
-                  {/* Issues */}
+                  {/* Potential Issues */}
                   <div className="mb-8">
                     <h3 className="mb-3 font-semibold">
                       Potential Issues
                     </h3>
 
-                    <div className="space-y-3">
-                      {analysis.issues.map((issue, index) => (
-                        <div
-                          key={index}
-                          className="rounded-lg border border-zinc-800 p-3 text-sm text-zinc-400"
-                        >
-                          {issue}
-                        </div>
-                      ))}
-                    </div>
+                    {analysis.issues.length > 0 ? (
+                      <div className="space-y-3">
+                        {analysis.issues.map((issue, index) => (
+                          <div
+                            key={index}
+                            className="
+                              rounded-lg
+                              border
+                              border-zinc-800
+                              bg-zinc-950
+                              p-3
+                              text-sm
+                              leading-6
+                              text-zinc-400
+                            "
+                          >
+                            <span className="mr-2 text-zinc-500">
+                              {index + 1}.
+                            </span>
+
+                            {issue}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-zinc-800 p-3 text-sm text-zinc-400">
+                        No major issues detected.
+                      </div>
+                    )}
                   </div>
 
                   {/* Suggestions */}
-                  <div>
+                  <div className="mb-8">
                     <h3 className="mb-3 font-semibold">
                       Suggestions
                     </h3>
 
-                    <div className="space-y-3">
-                      {analysis.suggestions.map((suggestion, index) => (
-                        <div
-                          key={index}
-                          className="rounded-lg bg-zinc-900 p-3 text-sm text-zinc-400"
-                        >
-                          ✓ {suggestion}
-                        </div>
-                      ))}
+                    {analysis.suggestions.length > 0 ? (
+                      <div className="space-y-3">
+                        {analysis.suggestions.map(
+                          (suggestion, index) => (
+                            <div
+                              key={index}
+                              className="
+                                rounded-lg
+                                bg-zinc-900
+                                p-3
+                                text-sm
+                                leading-6
+                                text-zinc-400
+                              "
+                            >
+                              ✓ {suggestion}
+                            </div>
+                          )
+                        )}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg bg-zinc-900 p-3 text-sm text-zinc-400">
+                        No additional improvements required.
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Improved Code */}
+                  <div>
+                    <div className="mb-3 flex items-center justify-between gap-4">
+                      <div>
+                        <h3 className="font-semibold">
+                          Improved Code
+                        </h3>
+
+                        <p className="mt-1 text-xs text-zinc-600">
+                          AI-generated improved version
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={copyImprovedCode}
+                        className="
+                          shrink-0
+                          rounded-md
+                          border
+                          border-zinc-700
+                          px-3
+                          py-1.5
+                          text-xs
+                          text-zinc-300
+                          transition
+                          hover:border-zinc-600
+                          hover:bg-zinc-800
+                        "
+                      >
+                        Copy Code
+                      </button>
                     </div>
+
+                    <pre
+                      className="
+                        max-h-112.5
+                        overflow-auto
+                        rounded-xl
+                        border
+                        border-zinc-800
+                        bg-black
+                        p-4
+                        text-sm
+                        leading-6
+                        text-zinc-300
+                      "
+                    >
+                      <code>
+                        {analysis.improvedCode}
+                      </code>
+                    </pre>
                   </div>
                 </div>
               )}
             </div>
           </div>
         </section>
+
+        {/* Footer */}
+        <footer className="mt-16 border-t border-zinc-900 pt-6 text-center text-xs text-zinc-600">
+          DevLens AI — AI-powered code analysis
+        </footer>
       </div>
     </main>
   );

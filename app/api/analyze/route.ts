@@ -29,7 +29,8 @@ Return ONLY valid JSON using exactly this structure:
   "score": 0,
   "explanation": "",
   "issues": [],
-  "suggestions": []
+  "suggestions": [],
+  "improvedCode": ""
 }
 
 Rules:
@@ -40,6 +41,8 @@ Rules:
 - provide practical improvements
 - don't invent problems if the code is correct
 - keep the explanation understandable for junior developers
+- improvedCode must contain a cleaner or safer version of the user's code
+- if the original code is already good, return the original code with only necessary improvements
 - do not use markdown
 - do not use code fences
 - return only JSON
