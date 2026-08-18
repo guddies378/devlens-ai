@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { languages } from "@/data/languages";
+import CodeEditor from "@/components/CodeEditor";
 
 type AnalysisResult = {
   score: number;
@@ -233,31 +234,11 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Code Input */}
-            <textarea
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder={`Paste your ${language} code here...`}
-              spellCheck={false}
-              className="
-                min-h-125
-                w-full
-                resize-none
-                rounded-xl
-                border
-                border-zinc-800
-                bg-zinc-950
-                p-5
-                font-mono
-                text-sm
-                leading-6
-                text-zinc-200
-                outline-none
-                transition
-                placeholder:text-zinc-700
-                focus:border-zinc-600
-              "
-            />
+            <CodeEditor
+              code={code}
+              language={language}
+              onChange={setCode}
+              />
 
             {/* Analyze Button */}
             <button
