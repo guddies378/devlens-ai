@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { languages } from "@/data/languages";
 
 type AnalysisResult = {
   score: number;
@@ -15,6 +16,18 @@ export default function Home() {
   const [language, setLanguage] = useState("JavaScript");
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const [languageOpen, setLanguageOpen] = useState(false);
+  const [languageSearch, setLanguageSearch] = useState("");
+
+  const filteredLanguages = languages.filter((item) =>
+    item.name.toLowerCase().includes(languageSearch.toLowerCase())
+  );
+
+  const selectedLanguage = languages.find(
+    (item) => item.name === language
+  );
 
   const analyzeCode = async () => {
     if (!code.trim()) {
@@ -23,6 +36,7 @@ export default function Home() {
 
     setLoading(true);
     setAnalysis(null);
+    setCopied(false);
 
     try {
       const response = await fetch("/api/analyze", {
@@ -45,6 +59,7 @@ export default function Home() {
       setAnalysis(result);
     } catch (error) {
       console.error(error);
+
       alert("Something went wrong while analyzing the code.");
     } finally {
       setLoading(false);
@@ -56,9 +71,21 @@ export default function Home() {
 
     try {
       await navigator.clipboard.writeText(analysis.improvedCode);
+
+      setCopied(true);
+
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
     } catch (error) {
       console.error("Failed to copy code:", error);
     }
+  };
+
+  const selectLanguage = (newLanguage: string) => {
+    setLanguage(newLanguage);
+    setLanguageOpen(false);
+    setLanguageSearch("");
   };
 
   return (
@@ -86,47 +113,132 @@ export default function Home() {
         <section className="grid gap-8 lg:grid-cols-2">
           {/* LEFT SIDE */}
           <div>
-            <div className="mb-3 flex items-center justify-between">
+            <div className="mb-3 flex items-center justify-between gap-4">
               <h2 className="font-semibold">Your Code</h2>
 
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                className="
-                  rounded-md
-                  border
-                  border-zinc-800
-                  bg-zinc-950
-                  px-3
-                  py-2
-                  text-sm
-                  text-zinc-300
-                  outline-none
-                "
-              >
-                <option>JavaScript</option>
-                <option>TypeScript</option>
-                <option>Python</option>
-                <option>Java</option>
-                <option>C</option>
-                <option>C++</option>
-                <option>C#</option>
-                <option>PHP</option>
-                <option>Go</option>
-                <option>Rust</option>
-                <option>Swift</option>
-                <option>Kotlin</option>
-                <option>Ruby</option>
-                <option>HTML</option>
-                <option>CSS</option>
-                <option>SQL</option>
-              </select>
+              {/* Language Selector */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setLanguageOpen(!languageOpen)}
+                  className="
+                    flex
+                    min-w-42.5
+                    items-center
+                    justify-between
+                    gap-4
+                    rounded-lg
+                    border
+                    border-zinc-800
+                    bg-zinc-950
+                    px-3
+                    py-2
+                    text-sm
+                    text-zinc-300
+                    transition
+                    hover:border-zinc-700
+                  "
+                >
+                  <span>{selectedLanguage?.name || language}</span>
+
+                  <span className="text-xs text-zinc-600">▼</span>
+                </button>
+
+                {languageOpen && (
+                  <div
+                    className="
+                      absolute
+                      right-0
+                      z-50
+                      mt-2
+                      w-70
+                      overflow-hidden
+                      rounded-xl
+                      border
+                      border-zinc-800
+                      bg-zinc-950
+                      shadow-2xl
+                    "
+                  >
+                    {/* Search */}
+                    <div className="border-b border-zinc-800 p-3">
+                      <input
+                        type="text"
+                        value={languageSearch}
+                        onChange={(e) =>
+                          setLanguageSearch(e.target.value)
+                        }
+                        placeholder="Search language..."
+                        autoFocus
+                        className="
+                          w-full
+                          rounded-lg
+                          border
+                          border-zinc-800
+                          bg-black
+                          px-3
+                          py-2
+                          text-sm
+                          text-zinc-200
+                          outline-none
+                          placeholder:text-zinc-600
+                          focus:border-zinc-600
+                        "
+                      />
+                    </div>
+
+                    {/* Language List */}
+                    <div className="max-h-80 overflow-y-auto p-2">
+                      {filteredLanguages.length > 0 ? (
+                        filteredLanguages.map((item) => (
+                          <button
+                            key={item.name}
+                            type="button"
+                            onClick={() =>
+                              selectLanguage(item.name)
+                            }
+                            className={`
+                              flex
+                              w-full
+                              items-center
+                              justify-between
+                              rounded-lg
+                              px-3
+                              py-2.5
+                              text-left
+                              text-sm
+                              transition
+                              ${
+                                language === item.name
+                                  ? "bg-zinc-800 text-white"
+                                  : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
+                              }
+                            `}
+                          >
+                            <span>{item.name}</span>
+
+                            <span className="text-xs text-zinc-600">
+                              {item.short}
+                            </span>
+                          </button>
+                        ))
+                      ) : (
+                        <p className="px-3 py-6 text-center text-sm text-zinc-600">
+                          No language found.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
+            {/* Code Input */}
             <textarea
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              placeholder="Paste your code here..."
+              placeholder={`Paste your ${language} code here...`}
+              spellCheck={false}
               className="
                 min-h-125
                 w-full
@@ -138,13 +250,16 @@ export default function Home() {
                 p-5
                 font-mono
                 text-sm
+                leading-6
                 text-zinc-200
                 outline-none
                 transition
+                placeholder:text-zinc-700
                 focus:border-zinc-600
               "
             />
 
+            {/* Analyze Button */}
             <button
               onClick={analyzeCode}
               disabled={loading || !code.trim()}
@@ -192,38 +307,44 @@ export default function Home() {
                       Ready to analyze
                     </h3>
 
-                    <p className="mt-2 max-w-xs text-sm text-zinc-600">
-                      Paste your code, choose the programming language, and
-                      click Analyze Code.
+                    <p className="mt-2 max-w-xs text-sm leading-6 text-zinc-600">
+                      Paste your code, choose the programming language,
+                      and click Analyze Code.
                     </p>
                   </div>
                 </div>
               )}
 
-              {/* Loading State */}
+              {/* Loading */}
               {loading && (
                 <div className="flex min-h-112.5 items-center justify-center">
                   <div className="text-center">
-                    <p className="animate-pulse text-zinc-400">
+                    <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-zinc-700 border-t-white" />
+
+                    <p className="text-sm text-zinc-400">
                       Analyzing your code...
                     </p>
                   </div>
                 </div>
               )}
 
-              {/* Analysis Results */}
+              {/* Results */}
               {analysis && (
                 <div>
                   {/* Score */}
                   <div className="mb-8">
-                    <p className="text-sm text-zinc-500">CODE QUALITY</p>
+                    <p className="text-sm text-zinc-500">
+                      CODE QUALITY
+                    </p>
 
                     <div className="mt-2 flex items-end gap-2">
                       <span className="text-5xl font-bold">
                         {analysis.score}
                       </span>
 
-                      <span className="mb-1 text-zinc-500">/100</span>
+                      <span className="mb-1 text-zinc-500">
+                        /100
+                      </span>
                     </div>
 
                     <div className="mt-4 h-2 overflow-hidden rounded-full bg-zinc-800">
@@ -241,14 +362,16 @@ export default function Home() {
 
                   {/* Explanation */}
                   <div className="mb-8">
-                    <h3 className="mb-3 font-semibold">Explanation</h3>
+                    <h3 className="mb-3 font-semibold">
+                      Explanation
+                    </h3>
 
                     <p className="text-sm leading-7 text-zinc-400">
                       {analysis.explanation}
                     </p>
                   </div>
 
-                  {/* Potential Issues */}
+                  {/* Issues */}
                   <div className="mb-8">
                     <h3 className="mb-3 font-semibold">
                       Potential Issues
@@ -327,7 +450,7 @@ export default function Home() {
                         </h3>
 
                         <p className="mt-1 text-xs text-zinc-600">
-                          AI-generated improved version
+                          AI-generated improved {language} code
                         </p>
                       </div>
 
@@ -347,7 +470,7 @@ export default function Home() {
                           hover:bg-zinc-800
                         "
                       >
-                        Copy Code
+                        {copied ? "✓ Copied!" : "Copy Code"}
                       </button>
                     </div>
 
@@ -365,9 +488,7 @@ export default function Home() {
                         text-zinc-300
                       "
                     >
-                      <code>
-                        {analysis.improvedCode}
-                      </code>
+                      <code>{analysis.improvedCode}</code>
                     </pre>
                   </div>
                 </div>
@@ -378,7 +499,7 @@ export default function Home() {
 
         {/* Footer */}
         <footer className="mt-16 border-t border-zinc-900 pt-6 text-center text-xs text-zinc-600">
-          DevLens AI — AI-powered code analysis
+          DevLens AI — AI-powered multi-language code analysis
         </footer>
       </div>
     </main>
