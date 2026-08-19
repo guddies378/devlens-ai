@@ -66,51 +66,59 @@ export default function Home() {
     (item) => item.name === language
   );
 
+  // =========================================================
+  // ANALYZE CODE
+  // =========================================================
+
   const analyzeCode = async () => {
     if (!code.trim()) {
       return;
     }
 
     setLoading(true);
+
     setAnalysis(null);
     setMetrics(null);
+
     setAnalysisError("");
     setMetricsError("");
+
     setCopied(false);
 
     try {
-      /*
-       * Gemini AI analysis
-       */
+      // Gemini AI analysis
       const aiRequest = fetch("/api/analyze", {
         method: "POST",
+
         headers: {
           "Content-Type": "application/json",
         },
+
         body: JSON.stringify({
           code,
           language,
         }),
       });
 
-      /*
-       * Metrics analysis
-       * Runs for every supported language.
-       */
+      // DevLens metrics engine
+      // Runs for every supported language
       const metricsRequest = fetch("/api/metrics", {
         method: "POST",
+
         headers: {
           "Content-Type": "application/json",
         },
+
         body: JSON.stringify({
           code,
           language,
         }),
       });
 
-      /*
-       * Wait for Gemini
-       */
+      // =====================================================
+      // AI RESPONSE
+      // =====================================================
+
       const aiResponse = await aiRequest;
 
       if (!aiResponse.ok) {
@@ -131,9 +139,10 @@ export default function Home() {
 
       setAnalysis(aiResult);
 
-      /*
-       * Wait for metrics
-       */
+      // =====================================================
+      // METRICS RESPONSE
+      // =====================================================
+
       const metricsResponse =
         await metricsRequest;
 
@@ -166,6 +175,10 @@ export default function Home() {
     }
   };
 
+  // =========================================================
+  // COPY IMPROVED CODE
+  // =========================================================
+
   const copyImprovedCode = async () => {
     if (!analysis?.improvedCode) {
       return;
@@ -189,10 +202,15 @@ export default function Home() {
     }
   };
 
+  // =========================================================
+  // LANGUAGE SELECTOR
+  // =========================================================
+
   const selectLanguage = (
     newLanguage: string
   ) => {
     setLanguage(newLanguage);
+
     setLanguageOpen(false);
     setLanguageSearch("");
 
@@ -208,7 +226,11 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-white">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
-        {/* HEADER */}
+
+        {/* =================================================
+            HEADER
+        ================================================= */}
+
         <header className="mb-10 flex items-center justify-between gap-4 sm:mb-12">
           <div>
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
@@ -229,9 +251,16 @@ export default function Home() {
           </span>
         </header>
 
-        {/* MAIN */}
+        {/* =================================================
+            MAIN CONTENT
+        ================================================= */}
+
         <section className="grid gap-8 lg:grid-cols-2">
-          {/* LEFT */}
+
+          {/* =================================================
+              LEFT SIDE
+          ================================================= */}
+
           <div>
             <div className="mb-3 flex items-center justify-between gap-4">
               <h2 className="font-semibold">
@@ -239,6 +268,7 @@ export default function Home() {
               </h2>
 
               {/* LANGUAGE SELECTOR */}
+
               <div className="relative">
                 <button
                   type="button"
@@ -275,6 +305,8 @@ export default function Home() {
                   </span>
                 </button>
 
+                {/* LANGUAGE DROPDOWN */}
+
                 {languageOpen && (
                   <div
                     className="
@@ -292,6 +324,8 @@ export default function Home() {
                       shadow-2xl
                     "
                   >
+                    {/* SEARCH */}
+
                     <div className="border-b border-zinc-800 p-3">
                       <input
                         type="text"
@@ -319,6 +353,8 @@ export default function Home() {
                         "
                       />
                     </div>
+
+                    {/* LANGUAGE LIST */}
 
                     <div className="max-h-80 overflow-y-auto p-2">
                       {filteredLanguages.length >
@@ -373,14 +409,20 @@ export default function Home() {
               </div>
             </div>
 
-            {/* MONACO EDITOR */}
+            {/* =================================================
+                MAIN MONACO EDITOR
+            ================================================= */}
+
             <CodeEditor
               code={code}
               language={language}
               onChange={setCode}
             />
 
-            {/* ANALYZE BUTTON */}
+            {/* =================================================
+                ANALYZE BUTTON
+            ================================================= */}
+
             <button
               type="button"
               onClick={analyzeCode}
@@ -409,7 +451,10 @@ export default function Home() {
             </button>
           </div>
 
-          {/* RIGHT */}
+          {/* =================================================
+              RIGHT SIDE
+          ================================================= */}
+
           <div>
             <h2 className="mb-3 font-semibold">
               Analysis
@@ -426,7 +471,11 @@ export default function Home() {
                 sm:p-6
               "
             >
-              {/* ANALYSIS ERROR */}
+
+              {/* =================================================
+                  ANALYSIS ERROR
+              ================================================= */}
+
               {analysisError && (
                 <div className="mb-6 rounded-xl border border-red-900/50 bg-red-950/20 p-4">
                   <p className="text-sm font-medium text-red-300">
@@ -439,7 +488,10 @@ export default function Home() {
                 </div>
               )}
 
-              {/* EMPTY STATE */}
+              {/* =================================================
+                  EMPTY STATE
+              ================================================= */}
+
               {!analysis &&
                 !loading &&
                 !analysisError && (
@@ -467,7 +519,10 @@ export default function Home() {
                   </div>
                 )}
 
-              {/* LOADING */}
+              {/* =================================================
+                  LOADING
+              ================================================= */}
+
               {loading && (
                 <div className="flex min-h-112.5 items-center justify-center">
                   <div className="text-center">
@@ -485,10 +540,17 @@ export default function Home() {
                 </div>
               )}
 
-              {/* RESULTS */}
+              {/* =================================================
+                  ANALYSIS RESULTS
+              ================================================= */}
+
               {analysis && (
                 <div>
-                  {/* QUALITY SCORE */}
+
+                  {/* =============================================
+                      QUALITY SCORE
+                  ============================================= */}
+
                   <div className="mb-8">
                     <p className="text-xs font-medium tracking-wider text-zinc-500">
                       CODE QUALITY
@@ -520,7 +582,10 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* EXPLANATION */}
+                  {/* =============================================
+                      EXPLANATION
+                  ============================================= */}
+
                   <div className="mb-8">
                     <h3 className="mb-3 font-semibold">
                       Explanation
@@ -531,7 +596,10 @@ export default function Home() {
                     </p>
                   </div>
 
-                  {/* ISSUES */}
+                  {/* =============================================
+                      POTENTIAL ISSUES
+                  ============================================= */}
+
                   <div className="mb-8">
                     <h3 className="mb-3 font-semibold">
                       Potential Issues
@@ -571,7 +639,10 @@ export default function Home() {
                     )}
                   </div>
 
-                  {/* SUGGESTIONS */}
+                  {/* =============================================
+                      SUGGESTIONS
+                  ============================================= */}
+
                   <div className="mb-8">
                     <h3 className="mb-3 font-semibold">
                       Suggestions
@@ -613,7 +684,10 @@ export default function Home() {
                     )}
                   </div>
 
-                  {/* METRICS ERROR */}
+                  {/* =============================================
+                      METRICS ERROR
+                  ============================================= */}
+
                   {metricsError && (
                     <div className="mb-8 rounded-xl border border-yellow-900/50 bg-yellow-950/20 p-4">
                       <p className="text-sm font-medium text-yellow-300">
@@ -626,7 +700,10 @@ export default function Home() {
                     </div>
                   )}
 
-                  {/* CODE METRICS */}
+                  {/* =============================================
+                      CODE METRICS
+                  ============================================= */}
+
                   {metrics && (
                     <div className="mb-8">
                       <div className="mb-4">
@@ -641,6 +718,7 @@ export default function Home() {
                       </div>
 
                       {/* MAIN METRICS */}
+
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                         <div className="rounded-xl border border-zinc-800 bg-black p-4">
                           <p className="text-2xl font-bold">
@@ -684,6 +762,7 @@ export default function Home() {
                       </div>
 
                       {/* COMPLEXITY + MAINTAINABILITY */}
+
                       <div className="mt-3 grid gap-3 sm:grid-cols-2">
                         <div className="rounded-xl border border-zinc-800 bg-black/30 p-4">
                           <p className="text-xs uppercase tracking-wide text-zinc-500">
@@ -717,6 +796,7 @@ export default function Home() {
                       </div>
 
                       {/* ADDITIONAL METRICS */}
+
                       <div className="mt-3 rounded-xl border border-zinc-800 bg-black/30 p-4">
                         <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
                           <div>
@@ -769,10 +849,12 @@ export default function Home() {
                         </div>
                       </div>
 
-                      {/* PYTHON COMPLEXITY BREAKDOWN */}
+                      {/* =========================================
+                          PYTHON COMPLEXITY BREAKDOWN
+                      ========================================= */}
+
                       {language === "Python" &&
-                        metrics
-                          .complexityBlocks
+                        metrics.complexityBlocks
                           .length > 0 && (
                           <div className="mt-3 rounded-xl border border-zinc-800 p-4">
                             <h4 className="mb-3 text-sm font-medium text-zinc-300">
@@ -817,7 +899,10 @@ export default function Home() {
                     </div>
                   )}
 
-                  {/* IMPROVED CODE */}
+                  {/* =============================================
+                      IMPROVED CODE
+                  ============================================= */}
+
                   <div>
                     <div className="mb-3 flex items-center justify-between gap-4">
                       <div>
@@ -859,26 +944,17 @@ export default function Home() {
                       </button>
                     </div>
 
-                    <pre
-                      className="
-                        max-h-112.5
-                        overflow-auto
-                        rounded-xl
-                        border
-                        border-zinc-800
-                        bg-black
-                        p-4
-                        text-sm
-                        leading-6
-                        text-zinc-300
-                      "
-                    >
-                      <code>
-                        {
-                          analysis.improvedCode
-                        }
-                      </code>
-                    </pre>
+                    {/* =========================================
+                        READ-ONLY MONACO EDITOR
+                    ========================================= */}
+
+                    <CodeEditor
+                      code={analysis.improvedCode}
+                      language={language}
+                      onChange={() => {}}
+                      readOnly={true}
+                      height="420px"
+                    />
                   </div>
                 </div>
               )}
@@ -886,7 +962,10 @@ export default function Home() {
           </div>
         </section>
 
-        {/* FOOTER */}
+        {/* =================================================
+            FOOTER
+        ================================================= */}
+
         <footer className="mt-16 border-t border-zinc-900 pt-6 text-center text-xs text-zinc-600">
           DevLens AI — AI-powered multi-language
           code analysis

@@ -6,6 +6,8 @@ type CodeEditorProps = {
   code: string;
   language: string;
   onChange: (value: string) => void;
+  readOnly?: boolean;
+  height?: string;
 };
 
 const monacoLanguages: Record<string, string> = {
@@ -53,19 +55,31 @@ export default function CodeEditor({
   code,
   language,
   onChange,
+  readOnly = false,
+  height = "500px",
 }: CodeEditorProps) {
   const editorLanguage =
     monacoLanguages[language] || "plaintext";
 
+  const lineCount = code
+    ? code.split("\n").length
+    : 1;
+
   return (
     <div className="overflow-hidden rounded-xl border border-zinc-800">
       <Editor
-        height="500px"
+        height={height}
         language={editorLanguage}
         value={code}
         theme="vs-dark"
-        onChange={(value) => onChange(value || "")}
+        onChange={(value) => {
+          if (!readOnly) {
+            onChange(value || "");
+          }
+        }}
         options={{
+          readOnly,
+
           minimap: {
             enabled: false,
           },
@@ -77,7 +91,6 @@ export default function CodeEditor({
             "Consolas, 'Courier New', monospace",
 
           scrollBeyondLastLine: false,
-
           automaticLayout: true,
 
           tabSize: 2,
@@ -91,7 +104,9 @@ export default function CodeEditor({
 
           lineNumbers: "on",
 
-          renderLineHighlight: "line",
+          renderLineHighlight: readOnly
+            ? "none"
+            : "line",
 
           cursorBlinking: "smooth",
 
@@ -100,18 +115,24 @@ export default function CodeEditor({
           bracketPairColorization: {
             enabled: true,
           },
+
+          domReadOnly: readOnly,
         }}
       />
 
-      {/* Editor Status Bar*/}
-        <div className="flex items-center justify-between border-t border-zinc-800 bg-zinc-950 px-4 py-2 text-xs text-zinc-500">
-            <span>{language}</span>
+      <div className="flex items-center justify-between border-t border-zinc-800 bg-zinc-950 px-4 py-2 text-xs text-zinc-500">
+        <span>
+          {language}
+          {readOnly ? " • Read only" : ""}
+        </span>
 
-            <span>
-                {code ? code.split("\n").length : 1}{" "}
-                {code.split("\n").length === 1 ? "line" : "lines"}
-            </span>
-        </div>
+        <span>
+          {lineCount}{" "}
+          {lineCount === 1
+            ? "line"
+            : "lines"}
+        </span>
+      </div>
     </div>
   );
 }
