@@ -7,10 +7,6 @@ from radon.complexity import cc_visit
 from radon.metrics import mi_visit
 
 
-# ============================================================
-# LANGUAGE COMMENT STYLES
-# ============================================================
-
 HASH_COMMENT_LANGUAGES = {
     "Python",
     "Ruby",
@@ -40,23 +36,11 @@ SLASH_COMMENT_LANGUAGES = {
     "Groovy",
 }
 
-SQL_COMMENT_LANGUAGES = {
-    "SQL",
-}
-
-PERCENT_COMMENT_LANGUAGES = {
-    "MATLAB",
-}
-
 HTML_COMMENT_LANGUAGES = {
     "HTML",
     "XML",
 }
 
-
-# ============================================================
-# LINE METRICS
-# ============================================================
 
 def count_lines(code: str, language: str):
     lines = code.splitlines()
@@ -75,7 +59,6 @@ def count_lines(code: str, language: str):
             blank_lines += 1
             continue
 
-        # HTML / XML comments
         if language in HTML_COMMENT_LANGUAGES:
             if stripped.startswith("<!--"):
                 comment_lines += 1
@@ -93,7 +76,6 @@ def count_lines(code: str, language: str):
 
                 continue
 
-        # /* */ style comments
         if language in SLASH_COMMENT_LANGUAGES:
             if stripped.startswith("/*"):
                 comment_lines += 1
@@ -115,20 +97,17 @@ def count_lines(code: str, language: str):
                 comment_lines += 1
                 continue
 
-        # # comments
         if language in HASH_COMMENT_LANGUAGES:
             if stripped.startswith("#"):
                 comment_lines += 1
                 continue
 
-        # SQL comments
-        if language in SQL_COMMENT_LANGUAGES:
+        if language == "SQL":
             if stripped.startswith("--"):
                 comment_lines += 1
                 continue
 
-        # MATLAB comments
-        if language in PERCENT_COMMENT_LANGUAGES:
+        if language == "MATLAB":
             if stripped.startswith("%"):
                 comment_lines += 1
                 continue
@@ -142,10 +121,6 @@ def count_lines(code: str, language: str):
         "commentLines": comment_lines,
     }
 
-
-# ============================================================
-# PYTHON STRUCTURE ANALYSIS
-# ============================================================
 
 def analyze_python_structures(code: str):
     try:
@@ -193,334 +168,489 @@ def analyze_python_structures(code: str):
     }
 
 
-# ============================================================
-# UNIVERSAL STRUCTURE ANALYSIS
-# ============================================================
-
 def count_matches(patterns, code):
-    total = 0
+    count = 0
 
     for pattern in patterns:
-        matches = re.findall(
-            pattern,
-            code,
-            flags=re.MULTILINE,
+        count += len(
+            re.findall(
+                pattern,
+                code,
+                flags=re.MULTILINE,
+            )
         )
 
-        total += len(matches)
-
-    return total
+    return count
 
 
 def analyze_generic_structures(code: str, language: str):
-    function_patterns = []
-    class_patterns = []
-    import_patterns = []
+    functions = 0
+    classes = 0
+    imports = 0
 
     # JavaScript / TypeScript
     if language in {"JavaScript", "TypeScript"}:
-        function_patterns = [
-            r"\bfunction\s+\w+\s*\(",
-            r"\b(?:const|let|var)\s+\w+\s*=\s*(?:async\s*)?\([^)]*\)\s*=>",
-            r"\b(?:const|let|var)\s+\w+\s*=\s*(?:async\s*)?\w+\s*=>",
-        ]
+        functions += count_matches(
+            [
+                r"\bfunction\s+\w+\s*\(",
+                r"\b(?:const|let|var)\s+\w+\s*=\s*(?:async\s*)?\([^)]*\)\s*=>",
+                r"\b(?:const|let|var)\s+\w+\s*=\s*(?:async\s*)?\w+\s*=>",
+                r"^\s*(?:async\s+)?\w+\s*\([^)]*\)\s*\{",
+            ],
+            code,
+        )
 
-        class_patterns = [
-            r"\bclass\s+\w+",
-        ]
+        classes = count_matches(
+            [
+                r"\bclass\s+\w+",
+            ],
+            code,
+        )
 
-        import_patterns = [
-            r"^\s*import\s+",
-            r"\brequire\s*\(",
-        ]
+        imports = count_matches(
+            [
+                r"^\s*import\s+",
+                r"\brequire\s*\(",
+            ],
+            code,
+        )
 
-    # Java / C# / Kotlin / Swift / Dart / Groovy
-    elif language in {
-        "Java",
-        "C#",
-        "Kotlin",
-        "Swift",
-        "Dart",
-        "Groovy",
-    }:
-        function_patterns = [
-            r"\b(?:public|private|protected|static|final|async|override|open|internal|\s)+"
-            r"[\w<>\[\]?]+\s+\w+\s*\([^;{}]*\)\s*\{",
-        ]
+    # Java
+    elif language == "Java":
+        functions += count_matches(
+            [
+                r"^\s*(?:public|private|protected|static|final|abstract|synchronized|\s)+"
+                r"[\w<>\[\]?]+\s+\w+\s*\([^;{}]*\)\s*(?:throws\s+[^{]+)?\{",
+            ],
+            code,
+        )
 
-        class_patterns = [
-            r"\bclass\s+\w+",
-            r"\binterface\s+\w+",
-        ]
+        classes = count_matches(
+            [
+                r"\bclass\s+\w+",
+                r"\binterface\s+\w+",
+                r"\benum\s+\w+",
+            ],
+            code,
+        )
 
-        import_patterns = [
-            r"^\s*import\s+",
-            r"^\s*using\s+",
-        ]
+        imports = count_matches(
+            [
+                r"^\s*import\s+",
+            ],
+            code,
+        )
 
-    # C / C++ / Objective-C
-    elif language in {
-        "C",
-        "C++",
-        "Objective-C",
-    }:
-        function_patterns = [
-            r"^[\w:*&<>\[\]\s]+\s+\w+\s*\([^;]*\)\s*\{",
-        ]
+    # C / C++
+    elif language in {"C", "C++"}:
+        functions += count_matches(
+            [
+                r"^\s*(?!if\b|for\b|while\b|switch\b|catch\b)"
+                r"[\w:*&<>\[\]\s]+\s+\w+(?:::\w+)?\s*\([^;{}]*\)\s*\{",
+            ],
+            code,
+        )
 
-        class_patterns = [
-            r"\bclass\s+\w+",
-            r"\bstruct\s+\w+",
-        ]
+        if language == "C++":
+            classes = count_matches(
+                [
+                    r"\bclass\s+\w+",
+                    r"\bstruct\s+\w+",
+                ],
+                code,
+            )
 
-        import_patterns = [
-            r"^\s*#include\s+",
-            r"^\s*#import\s+",
-        ]
+        imports = count_matches(
+            [
+                r"^\s*#include\s+",
+            ],
+            code,
+        )
+
+    # C#
+    elif language == "C#":
+        functions += count_matches(
+            [
+                r"^\s*(?:public|private|protected|internal|static|virtual|override|async|sealed|\s)+"
+                r"[\w<>\[\]?]+\s+\w+\s*\([^;{}]*\)\s*\{",
+            ],
+            code,
+        )
+
+        classes = count_matches(
+            [
+                r"\bclass\s+\w+",
+                r"\binterface\s+\w+",
+                r"\bstruct\s+\w+",
+            ],
+            code,
+        )
+
+        imports = count_matches(
+            [
+                r"^\s*using\s+[\w.]",
+            ],
+            code,
+        )
 
     # Go
     elif language == "Go":
-        function_patterns = [
-            r"\bfunc\s+(?:\([^)]*\)\s*)?\w+\s*\(",
-        ]
+        functions = count_matches(
+            [
+                r"\bfunc\s+(?:\([^)]*\)\s*)?\w+\s*\(",
+            ],
+            code,
+        )
 
-        class_patterns = [
-            r"\btype\s+\w+\s+struct\b",
-        ]
+        classes = count_matches(
+            [
+                r"\btype\s+\w+\s+struct\b",
+            ],
+            code,
+        )
 
-        import_patterns = [
-            r"^\s*import\s+",
-        ]
+        imports = count_matches(
+            [
+                r"^\s*import\s+",
+                r'^\s*"[^"]+"\s*$',
+            ],
+            code,
+        )
 
     # Rust
     elif language == "Rust":
-        function_patterns = [
-            r"\bfn\s+\w+\s*\(",
-        ]
+        functions = count_matches(
+            [
+                r"\bfn\s+\w+\s*\(",
+            ],
+            code,
+        )
 
-        class_patterns = [
-            r"\bstruct\s+\w+",
-            r"\benum\s+\w+",
-            r"\btrait\s+\w+",
-        ]
+        classes = count_matches(
+            [
+                r"\bstruct\s+\w+",
+                r"\benum\s+\w+",
+                r"\btrait\s+\w+",
+            ],
+            code,
+        )
 
-        import_patterns = [
-            r"^\s*use\s+",
-            r"^\s*extern\s+crate\s+",
-        ]
+        imports = count_matches(
+            [
+                r"^\s*use\s+",
+                r"^\s*extern\s+crate\s+",
+            ],
+            code,
+        )
 
     # PHP
     elif language == "PHP":
-        function_patterns = [
-            r"\bfunction\s+\w+\s*\(",
-        ]
+        functions = count_matches(
+            [
+                r"\bfunction\s+\w+\s*\(",
+            ],
+            code,
+        )
 
-        class_patterns = [
-            r"\bclass\s+\w+",
-            r"\binterface\s+\w+",
-            r"\btrait\s+\w+",
-        ]
+        classes = count_matches(
+            [
+                r"\bclass\s+\w+",
+                r"\binterface\s+\w+",
+                r"\btrait\s+\w+",
+            ],
+            code,
+        )
 
-        import_patterns = [
-            r"^\s*use\s+",
-            r"\brequire(?:_once)?\s*\(",
-            r"\binclude(?:_once)?\s*\(",
-        ]
+        imports = count_matches(
+            [
+                r"^\s*use\s+",
+                r"\brequire(?:_once)?\s*\(",
+                r"\binclude(?:_once)?\s*\(",
+            ],
+            code,
+        )
 
     # Ruby
     elif language == "Ruby":
-        function_patterns = [
-            r"^\s*def\s+\w+",
-        ]
+        functions = count_matches(
+            [
+                r"^\s*def\s+\w+",
+            ],
+            code,
+        )
 
-        class_patterns = [
-            r"^\s*class\s+\w+",
-            r"^\s*module\s+\w+",
-        ]
+        classes = count_matches(
+            [
+                r"^\s*class\s+\w+",
+                r"^\s*module\s+\w+",
+            ],
+            code,
+        )
 
-        import_patterns = [
-            r"^\s*require\s+",
-            r"^\s*require_relative\s+",
-        ]
+        imports = count_matches(
+            [
+                r"^\s*require\s+",
+                r"^\s*require_relative\s+",
+            ],
+            code,
+        )
+
+    # Kotlin
+    elif language == "Kotlin":
+        functions = count_matches(
+            [
+                r"\bfun\s+\w+\s*\(",
+            ],
+            code,
+        )
+
+        classes = count_matches(
+            [
+                r"\bclass\s+\w+",
+                r"\binterface\s+\w+",
+                r"\bobject\s+\w+",
+                r"\bdata\s+class\s+\w+",
+            ],
+            code,
+        )
+
+        imports = count_matches(
+            [
+                r"^\s*import\s+",
+            ],
+            code,
+        )
+
+    # Swift
+    elif language == "Swift":
+        functions = count_matches(
+            [
+                r"\bfunc\s+\w+\s*\(",
+            ],
+            code,
+        )
+
+        classes = count_matches(
+            [
+                r"\bclass\s+\w+",
+                r"\bstruct\s+\w+",
+                r"\benum\s+\w+",
+                r"\bprotocol\s+\w+",
+            ],
+            code,
+        )
+
+        imports = count_matches(
+            [
+                r"^\s*import\s+",
+            ],
+            code,
+        )
+
+    # Dart
+    elif language == "Dart":
+        functions = count_matches(
+            [
+                r"^\s*(?:[\w<>?]+\s+)?\w+\s*\([^;{}]*\)\s*\{",
+            ],
+            code,
+        )
+
+        classes = count_matches(
+            [
+                r"\bclass\s+\w+",
+                r"\benum\s+\w+",
+                r"\bmixin\s+\w+",
+            ],
+            code,
+        )
+
+        imports = count_matches(
+            [
+                r"^\s*import\s+",
+            ],
+            code,
+        )
 
     # Scala
     elif language == "Scala":
-        function_patterns = [
-            r"\bdef\s+\w+\s*\(",
-        ]
+        functions = count_matches(
+            [
+                r"\bdef\s+\w+\s*\(",
+            ],
+            code,
+        )
 
-        class_patterns = [
-            r"\bclass\s+\w+",
-            r"\bobject\s+\w+",
-            r"\btrait\s+\w+",
-        ]
+        classes = count_matches(
+            [
+                r"\bclass\s+\w+",
+                r"\bobject\s+\w+",
+                r"\btrait\s+\w+",
+            ],
+            code,
+        )
 
-        import_patterns = [
-            r"^\s*import\s+",
-        ]
-
-    # Lua
-    elif language == "Lua":
-        function_patterns = [
-            r"\bfunction\s+\w+",
-            r"\bfunction\s*\(",
-        ]
-
-    # Haskell
-    elif language == "Haskell":
-        function_patterns = [
-            r"^\s*\w+\s+.*=",
-        ]
-
-        import_patterns = [
-            r"^\s*import\s+",
-        ]
-
-    # Elixir
-    elif language == "Elixir":
-        function_patterns = [
-            r"\bdefp?\s+\w+",
-        ]
-
-        class_patterns = [
-            r"\bdefmodule\s+",
-        ]
-
-        import_patterns = [
-            r"\bimport\s+",
-            r"\balias\s+",
-            r"\brequire\s+",
-        ]
-
-    # F#
-    elif language == "F#":
-        function_patterns = [
-            r"^\s*let\s+\w+",
-        ]
-
-        class_patterns = [
-            r"^\s*type\s+\w+",
-        ]
-
-        import_patterns = [
-            r"^\s*open\s+",
-        ]
-
-    # R
-    elif language == "R":
-        function_patterns = [
-            r"\b\w+\s*<-\s*function\s*\(",
-            r"\b\w+\s*=\s*function\s*\(",
-        ]
-
-        import_patterns = [
-            r"\blibrary\s*\(",
-            r"\brequire\s*\(",
-        ]
-
-    # Julia
-    elif language == "Julia":
-        function_patterns = [
-            r"^\s*function\s+\w+",
-        ]
-
-        class_patterns = [
-            r"^\s*(?:mutable\s+)?struct\s+\w+",
-        ]
-
-        import_patterns = [
-            r"^\s*using\s+",
-            r"^\s*import\s+",
-        ]
-
-    # Shell / Bash
-    elif language == "Shell / Bash":
-        function_patterns = [
-            r"^\s*\w+\s*\(\)\s*\{",
-            r"^\s*function\s+\w+",
-        ]
-
-    # PowerShell
-    elif language == "PowerShell":
-        function_patterns = [
-            r"^\s*function\s+[\w-]+",
-        ]
-
-        class_patterns = [
-            r"^\s*class\s+\w+",
-        ]
-
-        import_patterns = [
-            r"^\s*Import-Module\s+",
-        ]
+        imports = count_matches(
+            [
+                r"^\s*import\s+",
+            ],
+            code,
+        )
 
     # Solidity
     elif language == "Solidity":
-        function_patterns = [
-            r"\bfunction\s+\w+\s*\(",
-        ]
+        functions = count_matches(
+            [
+                r"\bfunction\s+\w+\s*\(",
+            ],
+            code,
+        )
 
-        class_patterns = [
-            r"\bcontract\s+\w+",
-            r"\binterface\s+\w+",
-            r"\blibrary\s+\w+",
-        ]
+        classes = count_matches(
+            [
+                r"\bcontract\s+\w+",
+                r"\binterface\s+\w+",
+                r"\blibrary\s+\w+",
+            ],
+            code,
+        )
 
-        import_patterns = [
-            r"^\s*import\s+",
-        ]
+        imports = count_matches(
+            [
+                r"^\s*import\s+",
+            ],
+            code,
+        )
 
-    # SQL
-    elif language == "SQL":
-        function_patterns = [
-            r"\bCREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\b",
-            r"\bCREATE\s+(?:OR\s+REPLACE\s+)?PROCEDURE\b",
-        ]
+    # Julia
+    elif language == "Julia":
+        functions = count_matches(
+            [
+                r"^\s*function\s+\w+",
+            ],
+            code,
+        )
+
+        classes = count_matches(
+            [
+                r"^\s*(?:mutable\s+)?struct\s+\w+",
+            ],
+            code,
+        )
+
+        imports = count_matches(
+            [
+                r"^\s*using\s+",
+                r"^\s*import\s+",
+            ],
+            code,
+        )
+
+    # R
+    elif language == "R":
+        functions = count_matches(
+            [
+                r"\b\w+\s*<-\s*function\s*\(",
+                r"\b\w+\s*=\s*function\s*\(",
+            ],
+            code,
+        )
+
+        imports = count_matches(
+            [
+                r"\blibrary\s*\(",
+                r"\brequire\s*\(",
+            ],
+            code,
+        )
+
+    # Shell / Bash
+    elif language == "Shell / Bash":
+        functions = count_matches(
+            [
+                r"^\s*\w+\s*\(\)\s*\{",
+                r"^\s*function\s+\w+",
+            ],
+            code,
+        )
+
+    # PowerShell
+    elif language == "PowerShell":
+        functions = count_matches(
+            [
+                r"^\s*function\s+[\w-]+",
+            ],
+            code,
+        )
+
+        classes = count_matches(
+            [
+                r"^\s*class\s+\w+",
+            ],
+            code,
+        )
+
+        imports = count_matches(
+            [
+                r"^\s*Import-Module\s+",
+            ],
+            code,
+        )
 
     # HTML
     elif language == "HTML":
-        class_patterns = [
-            r"\bclass\s*=",
-        ]
+        classes = count_matches(
+            [
+                r"\bclass\s*=",
+            ],
+            code,
+        )
 
     # CSS / SCSS
     elif language in {"CSS", "SCSS"}:
-        class_patterns = [
-            r"(?m)^\s*\.[A-Za-z_-][\w-]*",
-        ]
+        classes = count_matches(
+            [
+                r"(?m)^\s*\.[A-Za-z_-][\w-]*",
+            ],
+            code,
+        )
 
-        import_patterns = [
-            r"@import\s+",
-            r"@use\s+",
-        ]
+        imports = count_matches(
+            [
+                r"@import\s+",
+                r"@use\s+",
+            ],
+            code,
+        )
+
+    # SQL
+    elif language == "SQL":
+        functions = count_matches(
+            [
+                r"\bCREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\b",
+                r"\bCREATE\s+(?:OR\s+REPLACE\s+)?PROCEDURE\b",
+            ],
+            code,
+        )
 
     # GraphQL
     elif language == "GraphQL":
-        function_patterns = [
-            r"\bquery\s+\w+",
-            r"\bmutation\s+\w+",
-            r"\bsubscription\s+\w+",
-        ]
+        functions = count_matches(
+            [
+                r"\bquery\s+\w+",
+                r"\bmutation\s+\w+",
+                r"\bsubscription\s+\w+",
+            ],
+            code,
+        )
 
-        class_patterns = [
-            r"\btype\s+\w+",
-            r"\binterface\s+\w+",
-        ]
-
-    functions = count_matches(
-        function_patterns,
-        code,
-    )
-
-    classes = count_matches(
-        class_patterns,
-        code,
-    )
-
-    imports = count_matches(
-        import_patterns,
-        code,
-    )
+        classes = count_matches(
+            [
+                r"\btype\s+\w+",
+                r"\binterface\s+\w+",
+            ],
+            code,
+        )
 
     return {
         "functions": functions,
@@ -529,10 +659,6 @@ def analyze_generic_structures(code: str, language: str):
         "syntaxValid": True,
     }
 
-
-# ============================================================
-# COMPLEXITY
-# ============================================================
 
 def calculate_python_complexity(code: str):
     try:
@@ -567,7 +693,7 @@ def calculate_python_complexity(code: str):
 
 
 def calculate_generic_complexity(code: str):
-    keywords = [
+    patterns = [
         r"\bif\b",
         r"\belse\s+if\b",
         r"\belif\b",
@@ -580,15 +706,14 @@ def calculate_generic_complexity(code: str):
         r"\bmatch\b",
         r"&&",
         r"\|\|",
-        r"\?",
     ]
 
     complexity = 1
 
-    for keyword in keywords:
+    for pattern in patterns:
         complexity += len(
             re.findall(
-                keyword,
+                pattern,
                 code,
                 flags=re.IGNORECASE,
             )
@@ -600,18 +725,15 @@ def calculate_generic_complexity(code: str):
     }
 
 
-# ============================================================
-# MAINTAINABILITY
-# ============================================================
-
 def calculate_python_maintainability(code: str):
     try:
-        score = mi_visit(
-            code,
-            multi=True,
+        return round(
+            mi_visit(
+                code,
+                multi=True,
+            ),
+            2,
         )
-
-        return round(score, 2)
 
     except Exception:
         return 0
@@ -624,24 +746,20 @@ def calculate_generic_maintainability(
 ):
     score = 100.0
 
-    # Complexity penalty
     score -= min(
         complexity * 1.5,
         35,
     )
 
-    # Large-file penalty
     if code_lines > 50:
         score -= min(
             (code_lines - 50) * 0.10,
             20,
         )
 
-    # Extremely large file penalty
     if code_lines > 200:
         score -= 10
 
-    # Small comment bonus
     if code_lines > 0:
         comment_ratio = (
             comment_lines / code_lines
@@ -652,17 +770,14 @@ def calculate_generic_maintainability(
             5,
         )
 
-    score = max(
-        0,
-        min(score, 100),
+    return round(
+        max(
+            0,
+            min(score, 100),
+        ),
+        2,
     )
 
-    return round(score, 2)
-
-
-# ============================================================
-# MAIN ANALYZER
-# ============================================================
 
 def analyze_code(code: str, language: str):
     line_metrics = count_lines(
@@ -670,7 +785,6 @@ def analyze_code(code: str, language: str):
         language,
     )
 
-    # Python gets precise AST + Radon analysis
     if language == "Python":
         structure_metrics = (
             analyze_python_structures(code)
@@ -719,10 +833,6 @@ def analyze_code(code: str, language: str):
     }
 
 
-# ============================================================
-# STDIN ENTRY POINT
-# ============================================================
-
 def main():
     try:
         raw_input = sys.stdin.read()
@@ -735,7 +845,6 @@ def main():
                     }
                 )
             )
-
             return
 
         data = json.loads(raw_input)
@@ -758,7 +867,6 @@ def main():
                     }
                 )
             )
-
             return
 
         if not language:
@@ -769,7 +877,6 @@ def main():
                     }
                 )
             )
-
             return
 
         result = analyze_code(
