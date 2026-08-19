@@ -80,15 +80,13 @@ export default function Home() {
 
     try {
       /*
-       * Gemini AI request
+       * Gemini AI analysis
        */
       const aiRequest = fetch("/api/analyze", {
         method: "POST",
-
         headers: {
           "Content-Type": "application/json",
         },
-
         body: JSON.stringify({
           code,
           language,
@@ -96,27 +94,22 @@ export default function Home() {
       });
 
       /*
-       * Python metrics request
-       * Only runs for Python.
+       * Metrics analysis
+       * Runs for every supported language.
        */
-      const metricsRequest =
-        language === "Python"
-          ? fetch("/api/metrics", {
-              method: "POST",
-
-              headers: {
-                "Content-Type": "application/json",
-              },
-
-              body: JSON.stringify({
-                code,
-                language,
-              }),
-            })
-          : null;
+      const metricsRequest = fetch("/api/metrics", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          code,
+          language,
+        }),
+      });
 
       /*
-       * Wait for Gemini result
+       * Wait for Gemini
        */
       const aiResponse = await aiRequest;
 
@@ -139,28 +132,25 @@ export default function Home() {
       setAnalysis(aiResult);
 
       /*
-       * Python metrics
+       * Wait for metrics
        */
-      if (metricsRequest) {
-        const metricsResponse =
-          await metricsRequest;
+      const metricsResponse =
+        await metricsRequest;
 
-        if (metricsResponse.ok) {
-          const metricsResult: CodeMetrics =
-            await metricsResponse.json();
+      if (metricsResponse.ok) {
+        const metricsResult: CodeMetrics =
+          await metricsResponse.json();
 
-          setMetrics(metricsResult);
-        } else {
-          const errorData =
-            await metricsResponse
-              .json()
-              .catch(() => null);
+        setMetrics(metricsResult);
+      } else {
+        const errorData = await metricsResponse
+          .json()
+          .catch(() => null);
 
-          setMetricsError(
-            errorData?.error ||
-              "Python metrics are currently unavailable."
-          );
-        }
+        setMetricsError(
+          errorData?.error ||
+            "Code metrics are currently unavailable."
+        );
       }
     } catch (error) {
       console.error(
@@ -206,15 +196,9 @@ export default function Home() {
     setLanguageOpen(false);
     setLanguageSearch("");
 
-    /*
-     * Clear old analysis
-     */
     setAnalysis(null);
     setMetrics(null);
 
-    /*
-     * Clear old errors
-     */
     setAnalysisError("");
     setMetricsError("");
 
@@ -224,9 +208,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-white">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
-        {/* ======================================
-            HEADER
-        ====================================== */}
+        {/* HEADER */}
         <header className="mb-10 flex items-center justify-between gap-4 sm:mb-12">
           <div>
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
@@ -238,8 +220,7 @@ export default function Home() {
             </h1>
 
             <p className="mt-1 text-sm text-zinc-500">
-              AI-powered multi-language code
-              analysis
+              AI-powered multi-language code analysis
             </p>
           </div>
 
@@ -248,22 +229,16 @@ export default function Home() {
           </span>
         </header>
 
-        {/* ======================================
-            MAIN CONTENT
-        ====================================== */}
+        {/* MAIN */}
         <section className="grid gap-8 lg:grid-cols-2">
-          {/* ======================================
-              LEFT SIDE
-          ====================================== */}
+          {/* LEFT */}
           <div>
             <div className="mb-3 flex items-center justify-between gap-4">
               <h2 className="font-semibold">
                 Your Code
               </h2>
 
-              {/* ======================================
-                  LANGUAGE SELECTOR
-              ====================================== */}
+              {/* LANGUAGE SELECTOR */}
               <div className="relative">
                 <button
                   type="button"
@@ -317,13 +292,10 @@ export default function Home() {
                       shadow-2xl
                     "
                   >
-                    {/* Search */}
                     <div className="border-b border-zinc-800 p-3">
                       <input
                         type="text"
-                        value={
-                          languageSearch
-                        }
+                        value={languageSearch}
                         onChange={(event) =>
                           setLanguageSearch(
                             event.target.value
@@ -348,16 +320,13 @@ export default function Home() {
                       />
                     </div>
 
-                    {/* Language list */}
                     <div className="max-h-80 overflow-y-auto p-2">
                       {filteredLanguages.length >
                       0 ? (
                         filteredLanguages.map(
                           (item) => (
                             <button
-                              key={
-                                item.name
-                              }
+                              key={item.name}
                               type="button"
                               onClick={() =>
                                 selectLanguage(
@@ -388,17 +357,14 @@ export default function Home() {
                               </span>
 
                               <span className="text-xs text-zinc-600">
-                                {
-                                  item.short
-                                }
+                                {item.short}
                               </span>
                             </button>
                           )
                         )
                       ) : (
                         <p className="px-3 py-6 text-center text-sm text-zinc-600">
-                          No language
-                          found.
+                          No language found.
                         </p>
                       )}
                     </div>
@@ -407,18 +373,14 @@ export default function Home() {
               </div>
             </div>
 
-            {/* ======================================
-                CODE EDITOR
-            ====================================== */}
+            {/* MONACO EDITOR */}
             <CodeEditor
               code={code}
               language={language}
               onChange={setCode}
             />
 
-            {/* ======================================
-                ANALYZE BUTTON
-            ====================================== */}
+            {/* ANALYZE BUTTON */}
             <button
               type="button"
               onClick={analyzeCode}
@@ -447,9 +409,7 @@ export default function Home() {
             </button>
           </div>
 
-          {/* ======================================
-              RIGHT SIDE
-          ====================================== */}
+          {/* RIGHT */}
           <div>
             <h2 className="mb-3 font-semibold">
               Analysis
@@ -466,9 +426,7 @@ export default function Home() {
                 sm:p-6
               "
             >
-              {/* ======================================
-                  MAIN ANALYSIS ERROR
-              ====================================== */}
+              {/* ANALYSIS ERROR */}
               {analysisError && (
                 <div className="mb-6 rounded-xl border border-red-900/50 bg-red-950/20 p-4">
                   <p className="text-sm font-medium text-red-300">
@@ -481,9 +439,7 @@ export default function Home() {
                 </div>
               )}
 
-              {/* ======================================
-                  EMPTY STATE
-              ====================================== */}
+              {/* EMPTY STATE */}
               {!analysis &&
                 !loading &&
                 !analysisError && (
@@ -498,62 +454,41 @@ export default function Home() {
                       </h3>
 
                       <p className="mt-2 max-w-xs text-sm leading-6 text-zinc-600">
-                        Paste your code,
-                        choose the
-                        programming
-                        language, and
-                        click Analyze
-                        Code.
+                        Paste your code, choose the
+                        programming language, and
+                        click Analyze Code.
                       </p>
 
-                      {language ===
-                        "Python" && (
-                        <p className="mt-3 text-xs text-zinc-700">
-                          Python analysis
-                          includes
-                          additional
-                          static code
-                          metrics.
-                        </p>
-                      )}
+                      <p className="mt-3 text-xs text-zinc-700">
+                        Code metrics are available
+                        for all supported languages.
+                      </p>
                     </div>
                   </div>
                 )}
 
-              {/* ======================================
-                  LOADING STATE
-              ====================================== */}
+              {/* LOADING */}
               {loading && (
                 <div className="flex min-h-112.5 items-center justify-center">
                   <div className="text-center">
                     <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-zinc-700 border-t-white" />
 
                     <p className="text-sm text-zinc-400">
-                      Analyzing your
-                      code...
+                      Analyzing your code...
                     </p>
 
-                    {language ===
-                      "Python" && (
-                      <p className="mt-2 text-xs text-zinc-600">
-                        Running AI
-                        review and
-                        Python static
-                        analysis
-                      </p>
-                    )}
+                    <p className="mt-2 text-xs text-zinc-600">
+                      Running AI review and static
+                      code metrics
+                    </p>
                   </div>
                 </div>
               )}
 
-              {/* ======================================
-                  ANALYSIS RESULTS
-              ====================================== */}
+              {/* RESULTS */}
               {analysis && (
                 <div>
-                  {/* ======================================
-                      QUALITY SCORE
-                  ====================================== */}
+                  {/* QUALITY SCORE */}
                   <div className="mb-8">
                     <p className="text-xs font-medium tracking-wider text-zinc-500">
                       CODE QUALITY
@@ -561,9 +496,7 @@ export default function Home() {
 
                     <div className="mt-2 flex items-end gap-2">
                       <span className="text-5xl font-bold">
-                        {
-                          analysis.score
-                        }
+                        {analysis.score}
                       </span>
 
                       <span className="mb-1 text-zinc-500">
@@ -587,41 +520,30 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* ======================================
-                      EXPLANATION
-                  ====================================== */}
+                  {/* EXPLANATION */}
                   <div className="mb-8">
                     <h3 className="mb-3 font-semibold">
                       Explanation
                     </h3>
 
                     <p className="text-sm leading-7 text-zinc-400">
-                      {
-                        analysis.explanation
-                      }
+                      {analysis.explanation}
                     </p>
                   </div>
 
-                  {/* ======================================
-                      POTENTIAL ISSUES
-                  ====================================== */}
+                  {/* ISSUES */}
                   <div className="mb-8">
                     <h3 className="mb-3 font-semibold">
                       Potential Issues
                     </h3>
 
-                    {analysis.issues
-                      .length > 0 ? (
+                    {analysis.issues.length >
+                    0 ? (
                       <div className="space-y-3">
                         {analysis.issues.map(
-                          (
-                            issue,
-                            index
-                          ) => (
+                          (issue, index) => (
                             <div
-                              key={
-                                index
-                              }
+                              key={index}
                               className="
                                 rounded-lg
                                 border
@@ -634,9 +556,7 @@ export default function Home() {
                               "
                             >
                               <span className="mr-2 text-zinc-600">
-                                {index +
-                                  1}
-                                .
+                                {index + 1}.
                               </span>
 
                               {issue}
@@ -646,23 +566,19 @@ export default function Home() {
                       </div>
                     ) : (
                       <div className="rounded-lg border border-zinc-800 p-3 text-sm text-zinc-400">
-                        No major issues
-                        detected.
+                        No major issues detected.
                       </div>
                     )}
                   </div>
 
-                  {/* ======================================
-                      SUGGESTIONS
-                  ====================================== */}
+                  {/* SUGGESTIONS */}
                   <div className="mb-8">
                     <h3 className="mb-3 font-semibold">
                       Suggestions
                     </h3>
 
-                    {analysis
-                      .suggestions
-                      .length > 0 ? (
+                    {analysis.suggestions.length >
+                    0 ? (
                       <div className="space-y-3">
                         {analysis.suggestions.map(
                           (
@@ -670,9 +586,7 @@ export default function Home() {
                             index
                           ) => (
                             <div
-                              key={
-                                index
-                              }
+                              key={index}
                               className="
                                 rounded-lg
                                 bg-zinc-900
@@ -686,211 +600,183 @@ export default function Home() {
                                 ✓
                               </span>
 
-                              {
-                                suggestion
-                              }
+                              {suggestion}
                             </div>
                           )
                         )}
                       </div>
                     ) : (
                       <div className="rounded-lg bg-zinc-900 p-3 text-sm text-zinc-400">
-                        No additional
-                        improvements
+                        No additional improvements
                         required.
                       </div>
                     )}
                   </div>
 
-                  {/* ======================================
-                      PYTHON METRICS ERROR
-                  ====================================== */}
-                  {language ===
-                    "Python" &&
-                    metricsError && (
-                      <div className="mb-8 rounded-xl border border-yellow-900/50 bg-yellow-950/20 p-4">
-                        <p className="text-sm font-medium text-yellow-300">
-                          Python Metrics
-                          Unavailable
-                        </p>
+                  {/* METRICS ERROR */}
+                  {metricsError && (
+                    <div className="mb-8 rounded-xl border border-yellow-900/50 bg-yellow-950/20 p-4">
+                      <p className="text-sm font-medium text-yellow-300">
+                        Code Metrics Unavailable
+                      </p>
 
-                        <p className="mt-2 text-sm leading-6 text-yellow-400">
-                          {
-                            metricsError
-                          }
+                      <p className="mt-2 text-sm leading-6 text-yellow-400">
+                        {metricsError}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* CODE METRICS */}
+                  {metrics && (
+                    <div className="mb-8">
+                      <div className="mb-4">
+                        <h3 className="font-semibold">
+                          {language} Code Metrics
+                        </h3>
+
+                        <p className="mt-1 text-xs text-zinc-600">
+                          Static analysis calculated
+                          by the DevLens metrics engine
                         </p>
                       </div>
-                    )}
 
-                  {/* ======================================
-                      PYTHON CODE METRICS
-                  ====================================== */}
-                  {language ===
-                    "Python" &&
-                    metrics && (
-                      <div className="mb-8">
-                        <div className="mb-4">
-                          <h3 className="font-semibold">
-                            Python Code
-                            Metrics
-                          </h3>
+                      {/* MAIN METRICS */}
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        <div className="rounded-xl border border-zinc-800 bg-black p-4">
+                          <p className="text-2xl font-bold">
+                            {metrics.totalLines}
+                          </p>
 
-                          <p className="mt-1 text-xs text-zinc-600">
-                            Static
-                            analysis
-                            calculated by
-                            the DevLens
-                            Python engine
+                          <p className="mt-1 text-xs text-zinc-500">
+                            Total Lines
                           </p>
                         </div>
 
-                        {/* Main Metrics */}
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                          <div className="rounded-xl border border-zinc-800 bg-black p-4">
-                            <p className="text-2xl font-bold">
-                              {
-                                metrics.totalLines
-                              }
-                            </p>
+                        <div className="rounded-xl border border-zinc-800 bg-black p-4">
+                          <p className="text-2xl font-bold">
+                            {metrics.codeLines}
+                          </p>
 
-                            <p className="mt-1 text-xs text-zinc-500">
-                              Total Lines
-                            </p>
-                          </div>
-
-                          <div className="rounded-xl border border-zinc-800 bg-black p-4">
-                            <p className="text-2xl font-bold">
-                              {
-                                metrics.codeLines
-                              }
-                            </p>
-
-                            <p className="mt-1 text-xs text-zinc-500">
-                              Code Lines
-                            </p>
-                          </div>
-
-                          <div className="rounded-xl border border-zinc-800 bg-black p-4">
-                            <p className="text-2xl font-bold">
-                              {
-                                metrics.functions
-                              }
-                            </p>
-
-                            <p className="mt-1 text-xs text-zinc-500">
-                              Functions
-                            </p>
-                          </div>
-
-                          <div className="rounded-xl border border-zinc-800 bg-black p-4">
-                            <p className="text-2xl font-bold">
-                              {
-                                metrics.classes
-                              }
-                            </p>
-
-                            <p className="mt-1 text-xs text-zinc-500">
-                              Classes
-                            </p>
-                          </div>
+                          <p className="mt-1 text-xs text-zinc-500">
+                            Code Lines
+                          </p>
                         </div>
 
-                        {/* Complexity + Maintainability */}
-                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                          <div className="rounded-xl border border-zinc-800 bg-black/30 p-4">
-                            <p className="text-xs uppercase tracking-wide text-zinc-500">
-                              Complexity
+                        <div className="rounded-xl border border-zinc-800 bg-black p-4">
+                          <p className="text-2xl font-bold">
+                            {metrics.functions}
+                          </p>
+
+                          <p className="mt-1 text-xs text-zinc-500">
+                            Functions
+                          </p>
+                        </div>
+
+                        <div className="rounded-xl border border-zinc-800 bg-black p-4">
+                          <p className="text-2xl font-bold">
+                            {metrics.classes}
+                          </p>
+
+                          <p className="mt-1 text-xs text-zinc-500">
+                            Classes
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* COMPLEXITY + MAINTAINABILITY */}
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                        <div className="rounded-xl border border-zinc-800 bg-black/30 p-4">
+                          <p className="text-xs uppercase tracking-wide text-zinc-500">
+                            {language === "Python"
+                              ? "Complexity"
+                              : "Estimated Complexity"}
+                          </p>
+
+                          <p className="mt-2 text-3xl font-bold">
+                            {metrics.complexity}
+                          </p>
+                        </div>
+
+                        <div className="rounded-xl border border-zinc-800 bg-black/30 p-4">
+                          <p className="text-xs uppercase tracking-wide text-zinc-500">
+                            Maintainability
+                          </p>
+
+                          <div className="mt-2 flex items-end gap-1">
+                            <p className="text-3xl font-bold">
+                              {
+                                metrics.maintainability
+                              }
                             </p>
 
-                            <p className="mt-2 text-3xl font-bold">
+                            <span className="mb-1 text-sm text-zinc-600">
+                              /100
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ADDITIONAL METRICS */}
+                      <div className="mt-3 rounded-xl border border-zinc-800 bg-black/30 p-4">
+                        <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+                          <div>
+                            <p className="text-zinc-500">
+                              Blank Lines
+                            </p>
+
+                            <p className="mt-1 font-medium">
                               {
-                                metrics.complexity
+                                metrics.blankLines
                               }
                             </p>
                           </div>
 
-                          <div className="rounded-xl border border-zinc-800 bg-black/30 p-4">
-                            <p className="text-xs uppercase tracking-wide text-zinc-500">
-                              Maintainability
+                          <div>
+                            <p className="text-zinc-500">
+                              Comments
                             </p>
 
-                            <div className="mt-2 flex items-end gap-1">
-                              <p className="text-3xl font-bold">
-                                {
-                                  metrics.maintainability
-                                }
-                              </p>
-
-                              <span className="mb-1 text-sm text-zinc-600">
-                                /100
-                              </span>
-                            </div>
+                            <p className="mt-1 font-medium">
+                              {
+                                metrics.commentLines
+                              }
+                            </p>
                           </div>
-                        </div>
 
-                        {/* Additional Metrics */}
-                        <div className="mt-3 rounded-xl border border-zinc-800 bg-black/30 p-4">
-                          <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
-                            <div>
-                              <p className="text-zinc-500">
-                                Blank
-                                Lines
-                              </p>
+                          <div>
+                            <p className="text-zinc-500">
+                              Imports
+                            </p>
 
-                              <p className="mt-1 font-medium">
-                                {
-                                  metrics.blankLines
-                                }
-                              </p>
-                            </div>
+                            <p className="mt-1 font-medium">
+                              {metrics.imports}
+                            </p>
+                          </div>
 
-                            <div>
-                              <p className="text-zinc-500">
-                                Comments
-                              </p>
+                          <div>
+                            <p className="text-zinc-500">
+                              Syntax
+                            </p>
 
-                              <p className="mt-1 font-medium">
-                                {
-                                  metrics.commentLines
-                                }
-                              </p>
-                            </div>
-
-                            <div>
-                              <p className="text-zinc-500">
-                                Imports
-                              </p>
-
-                              <p className="mt-1 font-medium">
-                                {
-                                  metrics.imports
-                                }
-                              </p>
-                            </div>
-
-                            <div>
-                              <p className="text-zinc-500">
-                                Syntax
-                              </p>
-
-                              <p className="mt-1 font-medium">
-                                {metrics.syntaxValid
+                            <p className="mt-1 font-medium">
+                              {language === "Python"
+                                ? metrics.syntaxValid
                                   ? "✓ Valid"
-                                  : "✕ Invalid"}
-                              </p>
-                            </div>
+                                  : "✕ Invalid"
+                                : "Estimated"}
+                            </p>
                           </div>
                         </div>
+                      </div>
 
-                        {/* Complexity Breakdown */}
-                        {metrics
+                      {/* PYTHON COMPLEXITY BREAKDOWN */}
+                      {language === "Python" &&
+                        metrics
                           .complexityBlocks
-                          .length >
-                          0 && (
+                          .length > 0 && (
                           <div className="mt-3 rounded-xl border border-zinc-800 p-4">
                             <h4 className="mb-3 text-sm font-medium text-zinc-300">
-                              Complexity
-                              Breakdown
+                              Complexity Breakdown
                             </h4>
 
                             <div className="space-y-2">
@@ -912,9 +798,7 @@ export default function Home() {
 
                                       <p className="text-xs text-zinc-600">
                                         Line{" "}
-                                        {
-                                          block.line
-                                        }
+                                        {block.line}
                                       </p>
                                     </div>
 
@@ -930,12 +814,10 @@ export default function Home() {
                             </div>
                           </div>
                         )}
-                      </div>
-                    )}
+                    </div>
+                  )}
 
-                  {/* ======================================
-                      IMPROVED CODE
-                  ====================================== */}
+                  {/* IMPROVED CODE */}
                   <div>
                     <div className="mb-3 flex items-center justify-between gap-4">
                       <div>
@@ -944,17 +826,14 @@ export default function Home() {
                         </h3>
 
                         <p className="mt-1 text-xs text-zinc-600">
-                          AI-generated
-                          improved{" "}
+                          AI-generated improved{" "}
                           {language} code
                         </p>
                       </div>
 
                       <button
                         type="button"
-                        onClick={
-                          copyImprovedCode
-                        }
+                        onClick={copyImprovedCode}
                         disabled={
                           !analysis.improvedCode
                         }
@@ -1007,12 +886,10 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ======================================
-            FOOTER
-        ====================================== */}
+        {/* FOOTER */}
         <footer className="mt-16 border-t border-zinc-900 pt-6 text-center text-xs text-zinc-600">
-          DevLens AI — AI-powered
-          multi-language code analysis
+          DevLens AI — AI-powered multi-language
+          code analysis
         </footer>
       </div>
     </main>
